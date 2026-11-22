@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transaction Risk Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F7F5;
+    --panel: #FFFFFF;
+    --ink: #14213D;
+    --muted: #5B6472;
+    --line: #DADDE2;
+    --risk: #8C1C13;
+    --risk-bg: #FBEEEC;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  header {
+    padding: 40px 48px 28px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .masthead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px 40px;
+  }
+
+  h1 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 600;
+    font-size: 28px;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .stats {
+    display: flex;
+    gap: 32px;
+  }
+
+  .stat {
+    text-align: right;
+  }
+
+  .stat .value {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+    display: block;
+  }
+
+  .stat .value.risk {
+    color: var(--risk);
+  }
+
+  .stat .label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  main {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 32px 48px 64px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+
+  .import-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  input[type="file"] {
+    font-size: 14px;
+    color: var(--muted);
+    flex: 1;
+    min-width: 200px;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    background: var(--ink);
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #223055;
+  }
+
+  button:disabled {
+    background: var(--muted);
+    cursor: default;
+  }
+
+  button.secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+
+  button.secondary:hover {
+    background: var(--bg);
+  }
+
+  #import-status {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 10px;
+    min-height: 18px;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .filters {
+    display: flex;
+    gap: 4px;
+  }
+
+  .filters button {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    padding: 6px 14px;
+    font-size: 13px;
+  }
+
+  .filters button.active {
+    background: var(--ink);
+    color: white;
+    border-color: var(--ink);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    padding: 0 12px 10px;
+    border-bottom: 1px solid var(--ink);
+  }
+
+  thead th.num {
+    text-align: right;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--line);
+  }
+
+  tbody tr.flagged {
+    background: var(--risk-bg);
+    border-left: 3px solid var(--risk);
+  }
+
+  tbody tr:not(.flagged) {
+    border-left: 3px solid transparent;
+  }
+
+  td {
+    padding: 12px;
+    vertical-align: top;
+  }
+
+  td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  td.account {
+    font-weight: 500;
+  }
+
+  td.timestamp, td.category {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .status {
+    font-size: 13px;
+  }
+
+  .status.ok {
+    color: var(--muted);
+  }
+
+  .status.flagged {
+    color: var(--risk);
+    font-weight: 500;
+  }
+
+  .reason {
+    font-size: 12px;
+    color: var(--risk);
+  }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 48px 0;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="masthead">
+    <h1>Transaction Risk Monitor</h1>
+    <div class="stats">
+      <div class="stat">
+        <span class="value" id="stat-total">—</span>
+        <span class="label">Transactions</span>
+      </div>
+      <div class="stat">
+        <span class="value risk" id="stat-flagged">—</span>
+        <span class="label">Flagged</span>
+      </div>
+      <div class="stat">
+        <span class="value" id="stat-rate">—</span>
+        <span class="label">Flag rate</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <p class="panel-title">Import transactions</p>
+    <div class="import-row">
+      <input type="file" id="file-input" accept=".csv">
+      <button id="import-btn">Import CSV</button>
+    </div>
+    <div id="import-status"></div>
+  </section>
+
+  <div class="toolbar">
+    <div class="filters">
+      <button id="filter-all" class="active">All</button>
+      <button id="filter-flagged">Flagged only</button>
+    </div>
+    <button class="secondary" id="refresh-btn">Refresh</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Account</th>
+        <th class="num">Amount</th>
+        <th>Time</th>
+        <th>Category</th>
+        <th>Status</th>
+        <th>Reason</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+  <div class="empty" id="empty-state" style="display:none;">No transactions yet — import a CSV above.</div>
+</main>
+
+<script>
+  const API_BASE = '/api/transactions';
+  const MAX_IMPORT_ROWS_HINT = 3000;
+  let allTransactions = [];
+  let currentFilter = 'all';
+
+  const tableBody = document.getElementById('table-body');
+  const emptyState = document.getElementById('empty-state');
+  const statTotal = document.getElementById('stat-total');
+  const statFlagged = document.getElementById('stat-flagged');
+  const statRate = document.getElementById('stat-rate');
+  const importStatus = document.getElementById('import-status');
+
+  function formatAmount(amount) {
+    return '€' + Number(amount).toFixed(2);
+  }
+
+  function formatTimestamp(iso) {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function render() {
+    const rows = currentFilter === 'flagged'
+      ? allTransactions.filter(t => t.flagged)
+      : allTransactions;
+
+    tableBody.innerHTML = '';
+    emptyState.style.display = rows.length === 0 ? 'block' : 'none';
+
+    rows
+      .slice()
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .forEach(t => {
+        const tr = document.createElement('tr');
+        if (t.flagged) tr.classList.add('flagged');
+
+        tr.innerHTML = `
+          <td class="account">${t.accountId}</td>
+          <td class="num">${formatAmount(t.amount)}</td>
+          <td class="timestamp">${formatTimestamp(t.timestamp)}</td>
+          <td class="category">${t.merchantCategory}</td>
+          <td class="status ${t.flagged ? 'flagged' : 'ok'}">${t.flagged ? 'Flagged' : 'Clear'}</td>
+          <td class="reason">${t.flagReason ? t.flagReason.split(',').join(', ') : ''}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+    const total = allTransactions.length;
+    const flagged = allTransactions.filter(t => t.flagged).length;
+    statTotal.textContent = total;
+    statFlagged.textContent = flagged;
+    statRate.textContent = total ? Math.round((flagged / total) * 100) + '%' : '—';
+  }
+
+  async function loadTransactions() {
+    const res = await fetch(API_BASE);
+    allTransactions = await res.json();
+    render();
+  }
+
+  document.getElementById('filter-all').addEventListener('click', () => {
+    currentFilter = 'all';
+    document.getElementById('filter-all').classList.add('active');
+    document.getElementById('filter-flagged').classList.remove('active');
+    render();
+  });
+
+  document.getElementById('filter-flagged').addEventListener('click', () => {
+    currentFilter = 'flagged';
+    document.getElementById('filter-flagged').classList.add('active');
+    document.getElementById('filter-all').classList.remove('active');
+    render();
+  });
+
+  document.getElementById('refresh-btn').addEventListener('click', loadTransactions);
+
+  document.getElementById('import-btn').addEventListener('click', async () => {
+    const fileInput = document.getElementById('file-input');
+    const btn = document.getElementById('import-btn');
+    if (!fileInput.files.length) {
+      importStatus.textContent = 'Choose a CSV file first.';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    btn.disabled = true;
+    importStatus.textContent = 'Importing…';
+
+    try {
+      const res = await fetch(API_BASE + '/import', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error('Import failed (' + res.status + ')');
+      const result = await res.json();
+      let message = `Imported ${result.totalImported} transactions — ${result.totalFlagged} flagged.`;
+      if (result.totalSkipped > 0) {
+        message += ` (${result.totalSkipped} rows skipped — couldn't parse.)`;
+      }
+      if (result.truncatedAtRow && result.truncatedAtRow > 0) {
+        message += ` File had more rows than the ${MAX_IMPORT_ROWS_HINT}-row demo limit, so it stopped early.`;
+      }
+      importStatus.textContent = message;
+      fileInput.value = '';
+      await loadTransactions();
+    } catch (err) {
+      importStatus.textContent = 'Error: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  loadTransactions();
+</script>
+
+</body>
+</html>
