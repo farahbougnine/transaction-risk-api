@@ -38,7 +38,7 @@ public class RiskRuleService {
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
-        candidate.setFlagged(!reasons.isEmpty());
+        candidate.setFlagged (reasons.isEmpty());
         candidate.setFlagReason(reasons.isEmpty() ? null : String.join(",", reasons));
 
         return transactionRepository.save(candidate);
